@@ -29,9 +29,7 @@ app.use(morgan('dev')); // Logging
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/properties', require('./routes/propertyRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/inquiries', require('./routes/inquiryRoutes'));
-app.use('/api/reviews', require('./routes/reviewRoutes'));
-app.use('/api/favorites', require('./routes/favoriteRoutes'));
+// ...existing code...
 
 // Health check route
 app.get('/api/health', (req, res) => {
