@@ -1,6 +1,5 @@
 {
-  "buildCommand": "cd \"Real Estate Agency Website\" && npm install && npm run build",
+  "buildCommand": "cd \"Real Estate Agency Website\" && npm install && npx vite build",
   "outputDirectory": "Real Estate Agency Website/build",
-  "framework": "vite",
-  "installCommand": "cd \"Real Estate Agency Website\" && npm install"
+  "installCommand": "npm install --prefix \"Real Estate Agency Website\""
 }
