@@ -1,7 +1,6 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "Real Estate Agency Website/build",
-  "installCommand": "npm install && cd \"Real Estate Agency Website\" && npm install",
+  "outputDirectory": "build",
   "routes": [
     {
       "handle": "filesystem"
