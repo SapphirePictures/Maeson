@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
   # Real Estate Agency Website
 
@@ -9,3 +10,6 @@
 
   Run `npm run dev` to start the development server.
   
+=======
+# Maeson
+>>>>>>> b7a7b5a3b2162a67aaae4191c35a3c84f39ef631
