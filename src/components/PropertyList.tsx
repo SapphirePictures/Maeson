@@ -1,13 +1,37 @@
 
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { PropertyCard } from './PropertyCard';
-import { properties } from '../lib/data';
+import { propertyAPI } from '../lib/api/properties';
 
 export function PropertyList() {
   const [visibleCount, setVisibleCount] = React.useState(6);
-  const forSale = properties.filter(p => p.type === 'buy');
-  const forRent = properties.filter(p => p.type === 'rent');
+  const { data: featuredProperties = [] } = useQuery({
+    queryKey: ['featured-properties'],
+    queryFn: propertyAPI.getFeaturedProperties,
+  });
+
+  const forSale = featuredProperties.filter((p) => p.listing_type === 'sale');
+  const forRent = featuredProperties.filter((p) => p.listing_type === 'rent');
+
+  const mapToCard = (property: any) => ({
+    id: property.id,
+    title: property.title,
+    location: `${property.city || ''}${property.state ? `, ${property.state}` : ''}`,
+    price: new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+    }).format(property.price) + (property.listing_type === 'rent' ? '/yr' : ''),
+    type: property.property_type === 'land' ? 'land' : (property.listing_type === 'sale' ? 'buy' : property.listing_type),
+    bedrooms: property.bedrooms || 0,
+    bathrooms: property.bathrooms || 0,
+    area: property.square_feet ? `${property.square_feet} sqft` : '',
+    image: property.images?.[0] || '',
+    images: property.images || [],
+    isNew: property.is_featured,
+  });
 
   const loadMore = () => {
     setVisibleCount((prev) => prev + 6);
@@ -32,7 +56,7 @@ export function PropertyList() {
           <TabsContent value="buy">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {forSale.slice(0, visibleCount).map((property) => (
-                <PropertyCard key={property.id} property={property} />
+                <PropertyCard key={property.id} property={mapToCard(property)} />
               ))}
             </div>
              {visibleCount < forSale.length && (
@@ -45,7 +69,7 @@ export function PropertyList() {
           <TabsContent value="rent">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {forRent.slice(0, visibleCount).map((property) => (
-                <PropertyCard key={property.id} property={property} />
+                <PropertyCard key={property.id} property={mapToCard(property)} />
               ))}
             </div>
              {visibleCount < forRent.length && (

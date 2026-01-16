@@ -1,43 +1,36 @@
-import axiosInstance from '../axios';
+import { supabase } from '../supabaseClient';
 
 export interface Property {
-  _id: string;
+  id: string;
   title: string;
-  description: string;
+  description: string | null;
   price: number;
-  propertyType: string;
-  listingType: 'sale' | 'rent' | 'lease';
-  status: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-  bedrooms?: number;
-  bathrooms?: number;
-  squareFeet?: number;
-  lotSize?: number;
-  yearBuilt?: number;
-  features?: string[];
-  amenities?: string[];
-  images: Array<{
-    url: string;
-    publicId?: string;
-    caption?: string;
-  }>;
-  virtualTour?: string;
-  owner: any;
-  agent?: any;
-  views: number;
-  parking?: string;
-  heating?: string;
-  cooling?: string;
-  isFeatured: boolean;
-  isPublished: boolean;
-  createdAt: string;
-  updatedAt: string;
+  property_type: string;
+  listing_type: 'sale' | 'rent' | 'lease';
+  status: string | null;
+  street: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+  country: string | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  square_feet?: number | null;
+  lot_size?: number | null;
+  year_built?: number | null;
+  features?: string[] | null;
+  amenities?: string[] | null;
+  images: string[];
+  virtual_tour?: string | null;
+  agent_id?: string | null;
+  views: number | null;
+  parking?: string | null;
+  heating?: string | null;
+  cooling?: string | null;
+  is_featured: boolean;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PropertyFilters {
@@ -69,61 +62,180 @@ export interface PropertyResponse {
 export const propertyAPI = {
   // Get all properties with filters
   getProperties: async (filters?: PropertyFilters): Promise<PropertyResponse> => {
-    const params = new URLSearchParams();
-    
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
-          params.append(key, value.toString());
-        }
-      });
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 12;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let query = supabase
+      .from('properties')
+      .select('*', { count: 'exact' })
+      .eq('is_published', true);
+
+    if (filters?.listingType) {
+      query = query.eq('listing_type', filters.listingType);
     }
 
-    const response = await axiosInstance.get(`/properties?${params.toString()}`);
-    return response.data;
+    if (filters?.propertyType) {
+      query = query.eq('property_type', filters.propertyType);
+    }
+
+    if (filters?.status) {
+      query = query.eq('status', filters.status);
+    }
+
+    if (filters?.city) {
+      query = query.ilike('city', `%${filters.city}%`);
+    }
+
+    if (filters?.state) {
+      query = query.ilike('state', `%${filters.state}%`);
+    }
+
+    if (filters?.minPrice !== undefined) {
+      query = query.gte('price', filters.minPrice);
+    }
+
+    if (filters?.maxPrice !== undefined) {
+      query = query.lte('price', filters.maxPrice);
+    }
+
+    if (filters?.bedrooms !== undefined) {
+      query = query.gte('bedrooms', filters.bedrooms);
+    }
+
+    if (filters?.bathrooms !== undefined) {
+      query = query.gte('bathrooms', filters.bathrooms);
+    }
+
+    if (filters?.search) {
+      const search = filters.search;
+      query = query.or(
+        `title.ilike.%${search}%,city.ilike.%${search}%,state.ilike.%${search}%`
+      );
+    }
+
+    if (filters?.sort) {
+      if (filters.sort === 'newest') {
+        query = query.order('created_at', { ascending: false });
+      } else if (filters.sort === 'oldest') {
+        query = query.order('created_at', { ascending: true });
+      } else {
+        const [column, direction] = filters.sort.split(':');
+        query = query.order(column, { ascending: direction !== 'desc' });
+      }
+    } else {
+      query = query.order('created_at', { ascending: false });
+    }
+
+    const { data, error, count } = await query.range(from, to);
+
+    if (error) {
+      throw error;
+    }
+
+    const total = count || 0;
+    const pages = Math.max(1, Math.ceil(total / limit));
+
+    return {
+      status: 'success',
+      count: data?.length || 0,
+      total,
+      page,
+      pages,
+      data: data || [],
+    };
   },
 
   // Get single property
   getProperty: async (id: string): Promise<Property> => {
-    const response = await axiosInstance.get(`/properties/${id}`);
-    return response.data.data;
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      throw error || new Error('Property not found');
+    }
+
+    return data;
   },
 
   // Get featured properties
   getFeaturedProperties: async (): Promise<Property[]> => {
-    const response = await axiosInstance.get('/properties/featured');
-    return response.data.data;
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('is_featured', true)
+      .eq('is_published', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return data || [];
   },
 
   // Create property (requires auth)
   createProperty: async (data: Partial<Property>): Promise<Property> => {
-    const response = await axiosInstance.post('/properties', data);
-    return response.data.data;
+    const { data: created, error } = await supabase
+      .from('properties')
+      .insert(data)
+      .select('*')
+      .single();
+
+    if (error || !created) {
+      throw error || new Error('Failed to create property');
+    }
+
+    return created;
   },
 
   // Update property (requires auth)
   updateProperty: async (id: string, data: Partial<Property>): Promise<Property> => {
-    const response = await axiosInstance.put(`/properties/${id}`, data);
-    return response.data.data;
+    const { data: updated, error } = await supabase
+      .from('properties')
+      .update(data)
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error || !updated) {
+      throw error || new Error('Failed to update property');
+    }
+
+    return updated;
   },
 
   // Delete property (requires auth)
   deleteProperty: async (id: string): Promise<void> => {
-    await axiosInstance.delete(`/properties/${id}`);
+    const { error } = await supabase
+      .from('properties')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
   },
 
   // Upload property images (requires auth)
   uploadImages: async (id: string, images: File[]): Promise<Property> => {
-    const formData = new FormData();
-    images.forEach((image) => {
-      formData.append('images', image);
-    });
+    const imageUrls = images.map((file) => URL.createObjectURL(file));
 
-    const response = await axiosInstance.post(`/properties/${id}/images`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data.data;
+    const { data: updated, error } = await supabase
+      .from('properties')
+      .update({ images: imageUrls })
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error || !updated) {
+      throw error || new Error('Failed to upload images');
+    }
+
+    return updated;
   },
 };

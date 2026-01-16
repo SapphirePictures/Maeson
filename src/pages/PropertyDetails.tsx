@@ -1,28 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, MapPin, Bed, Bath, Move, Phone, Mail, Calendar, Check, Share2, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { properties } from '../lib/data';
+import { propertyAPI } from '../lib/api/properties';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 
 export function PropertyDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const property = properties.find(p => p.id === Number(id));
+  const { data: property, isLoading, isError } = useQuery({
+    queryKey: ['property', id],
+    queryFn: () => propertyAPI.getProperty(id || ''),
+    enabled: !!id,
+  });
 
   // Initialize state only if property exists to avoid errors on initial render if null
-  const [activeImage, setActiveImage] = useState(property?.image);
+  const [activeImage, setActiveImage] = useState(property?.images?.[0]);
 
   // Use property.images if available, otherwise fall back to just the main image
-  const galleryImages = property?.images || (property?.image ? [property.image] : []);
+  const galleryImages = property?.images || [];
 
   useEffect(() => {
-    if (property) {
-      setActiveImage(property.image);
+    if (property?.images?.length) {
+      setActiveImage(property.images[0]);
     }
   }, [property]);
 
-  if (!property) {
+  const formatPrice = (price: number, listingType: string) => {
+    const formatted = new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+    }).format(price);
+
+    return listingType === 'rent' ? `${formatted}/yr` : formatted;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center text-center px-4">
+        <div className="text-slate-600">Loading property...</div>
+      </div>
+    );
+  }
+
+  if (isError || !property) {
     return (
       <div className="min-h-screen pt-20 flex flex-col items-center justify-center text-center px-4">
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Property Not Found</h2>
@@ -56,7 +79,7 @@ export function PropertyDetails() {
               <h1 className="text-2xl font-bold text-slate-900 mb-2">{property.title}</h1>
               <div className="flex items-center text-slate-600 mb-4">
                 <MapPin className="h-4 w-4 mr-1 text-[#0F4C5C]" />
-                {property.location}
+                {property.city}{property.state ? `, ${property.state}` : ''}
               </div>
             </div>
 
@@ -101,10 +124,10 @@ export function PropertyDetails() {
                 )}
 
                 <div className="absolute top-4 left-4 flex gap-2">
-                  <span className={`px-3 py-1 text-xs font-bold rounded-full ${property.type === 'buy' ? 'bg-[#0F4C5C] text-white' : 'bg-[#E3B505] text-[#0F4C5C]'}`}>
-                    {property.type === 'buy' ? 'For Sale' : 'For Rent'}
+                  <span className={`px-3 py-1 text-xs font-bold rounded-full ${property.listing_type === 'sale' ? 'bg-[#0F4C5C] text-white' : 'bg-[#E3B505] text-[#0F4C5C]'}`}>
+                    {property.listing_type === 'sale' ? 'For Sale' : 'For Rent'}
                   </span>
-                  {property.isNew && (
+                  {property.is_featured && (
                     <span className="bg-white/90 backdrop-blur-sm text-slate-900 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
                       New
                     </span>
@@ -144,34 +167,34 @@ export function PropertyDetails() {
                       <h1 className="text-3xl font-bold text-slate-900 mb-2">{property.title}</h1>
                       <div className="flex items-center text-slate-600">
                         <MapPin className="h-5 w-5 mr-1.5 text-[#0F4C5C]" />
-                        {property.location}
+                        {property.city}{property.state ? `, ${property.state}` : ''}
                       </div>
                     </div>
                     <div className="text-right">
-                       <div className="text-3xl font-bold text-[#0F4C5C]">{property.price}</div>
+                       <div className="text-3xl font-bold text-[#0F4C5C]">{formatPrice(property.price, property.listing_type)}</div>
                     </div>
                  </div>
               </div>
               
               <div className="lg:hidden mb-6 border-b border-slate-100 pb-6">
-                 <div className="text-3xl font-bold text-[#0F4C5C]">{property.price}</div>
+                <div className="text-3xl font-bold text-[#0F4C5C]">{formatPrice(property.price, property.listing_type)}</div>
               </div>
 
               <h3 className="text-xl font-bold text-slate-900 mb-4">Overview</h3>
               <div className="grid grid-cols-3 gap-4 mb-8">
                  <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-lg border border-slate-100">
                     <Bed className="h-6 w-6 text-slate-400 mb-2" />
-                    <span className="font-bold text-slate-900 text-lg">{property.bedrooms}</span>
+                    <span className="font-bold text-slate-900 text-lg">{property.bedrooms || 0}</span>
                     <span className="text-xs text-slate-500 uppercase tracking-wide">Bedrooms</span>
                  </div>
                  <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-lg border border-slate-100">
                     <Bath className="h-6 w-6 text-slate-400 mb-2" />
-                    <span className="font-bold text-slate-900 text-lg">{property.bathrooms}</span>
+                    <span className="font-bold text-slate-900 text-lg">{property.bathrooms || 0}</span>
                     <span className="text-xs text-slate-500 uppercase tracking-wide">Bathrooms</span>
                  </div>
                  <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-lg border border-slate-100">
                     <Move className="h-6 w-6 text-slate-400 mb-2" />
-                    <span className="font-bold text-slate-900 text-lg">{property.area}</span>
+                    <span className="font-bold text-slate-900 text-lg">{property.square_feet ? `${property.square_feet} sqft` : ''}</span>
                     <span className="text-xs text-slate-500 uppercase tracking-wide">Area</span>
                  </div>
               </div>
@@ -179,12 +202,12 @@ export function PropertyDetails() {
               <h3 className="text-xl font-bold text-slate-900 mb-4">Description</h3>
               <div className="prose prose-slate max-w-none text-slate-600">
                 <p>
-                  Welcome to this stunning property located in the heart of {property.location.split(',')[0]}. 
-                  This exquisite {property.bedrooms > 0 ? `${property.bedrooms}-bedroom` : ''} home offers a perfect blend of modern luxury and comfort.
+                  Welcome to this stunning property located in the heart of {property.city || 'the city'}. 
+                  This exquisite {property.bedrooms && property.bedrooms > 0 ? `${property.bedrooms}-bedroom` : ''} home offers a perfect blend of modern luxury and comfort.
                 </p>
                 <p className="mt-4">
                   Featuring spacious living areas, high-end finishes, and ample natural light, this property is designed for those who appreciate quality.
-                  The {property.area} layout ensures plenty of room for relaxation and entertainment.
+                  The {property.square_feet ? `${property.square_feet} sqft` : 'spacious'} layout ensures plenty of room for relaxation and entertainment.
                 </p>
                 <p className="mt-4">
                   Don't miss the opportunity to own this piece of paradise in one of Nigeria's most sought-after locations.

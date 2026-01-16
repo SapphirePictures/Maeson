@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authAPI, User, LoginCredentials, RegisterData } from '../lib/api/auth';
+import { supabase } from '../lib/supabaseClient';
 import { toast } from 'sonner';
 
 interface AuthContextType {
@@ -23,28 +24,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Initialize auth state from localStorage
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
+      try {
+        const { data } = await supabase.auth.getSession();
+        const sessionToken = data.session?.access_token || null;
 
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-
-        // Verify token is still valid by fetching current user
-        try {
+        if (sessionToken) {
           const currentUser = await authAPI.getMe();
+          setToken(sessionToken);
           setUser(currentUser);
+          localStorage.setItem('token', sessionToken);
           localStorage.setItem('user', JSON.stringify(currentUser));
-        } catch (error) {
-          // Token is invalid, clear auth state
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+        } else {
           setToken(null);
           setUser(null);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
         }
+      } catch (error) {
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     initAuth();
@@ -81,6 +84,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
+    authAPI.logout().catch(() => {
+      // Ignore logout errors
+    });
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');

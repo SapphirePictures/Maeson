@@ -114,7 +114,7 @@ export function Inquiries() {
                         <div className="flex-1">
                           <CardTitle className="text-lg">
                             <Link 
-                              to={`/properties/${inquiry.property._id}`}
+                              to={`/properties/${inquiry.property.id}`}
                               className="hover:text-[#0F4C5C]"
                             >
                               {inquiry.property.title}
@@ -150,7 +150,7 @@ export function Inquiries() {
                         )}
 
                         <div className="flex items-center gap-4 text-sm text-slate-500">
-                          <span>To: {inquiry.recipient.firstName} {inquiry.recipient.lastName}</span>
+                          <span>To: {inquiry.recipient?.first_name || 'Maeson'} {inquiry.recipient?.last_name || 'Team'}</span>
                           <span>•</span>
                           <span>Type: {inquiry.inquiryType}</span>
                         </div>
@@ -186,7 +186,7 @@ export function Inquiries() {
                         <div className="flex-1">
                           <CardTitle className="text-lg">
                             <Link 
-                              to={`/properties/${inquiry.property._id}`}
+                              to={`/properties/${inquiry.property.id}`}
                               className="hover:text-[#0F4C5C]"
                             >
                               {inquiry.property.title}

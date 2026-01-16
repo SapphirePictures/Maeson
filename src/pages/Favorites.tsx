@@ -99,16 +99,16 @@ export function Favorites() {
                 <div key={favorite._id} className="relative">
                   <PropertyCard
                     property={{
-                      id: favorite.property._id,
+                      id: favorite.property.id,
                       title: favorite.property.title,
-                      location: `${favorite.property.address.city}, ${favorite.property.address.state}`,
-                      price: formatPrice(favorite.property.price, favorite.property.listingType),
-                      type: favorite.property.listingType === 'sale' ? 'buy' : 'rent',
+                      location: `${favorite.property.city || ''}${favorite.property.state ? `, ${favorite.property.state}` : ''}`,
+                      price: formatPrice(favorite.property.price, favorite.property.listing_type),
+                      type: favorite.property.property_type === 'land' ? 'land' : (favorite.property.listing_type === 'sale' ? 'buy' : favorite.property.listing_type),
                       bedrooms: favorite.property.bedrooms || 0,
                       bathrooms: favorite.property.bathrooms || 0,
-                      area: favorite.property.squareFeet ? `${favorite.property.squareFeet} sqft` : '',
-                      image: favorite.property.images[0]?.url || '',
-                      images: favorite.property.images.map((img: any) => img.url),
+                      area: favorite.property.square_feet ? `${favorite.property.square_feet} sqft` : '',
+                      image: favorite.property.images?.[0] || '',
+                      images: favorite.property.images || [],
                       isNew: false,
                     }}
                   />

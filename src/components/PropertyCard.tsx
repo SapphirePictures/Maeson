@@ -21,6 +21,8 @@ interface PropertyProps {
 }
 
 export function PropertyCard({ property, layout = 'grid' }: PropertyProps) {
+  const badgeLabel = property.type === 'rent' ? 'For Rent' : property.type === 'land' ? 'Land' : 'For Sale';
+
   if (layout === 'horizontal') {
     return (
       <Link 
@@ -39,7 +41,7 @@ export function PropertyCard({ property, layout = 'grid' }: PropertyProps) {
           {/* Top Left Badge */}
           <div className="absolute top-2 left-2">
              <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wide rounded-sm bg-white/90 text-slate-900 shadow-sm">
-              {property.type === 'buy' ? 'For Sale' : 'For Rent'}
+              {badgeLabel}
             </span>
           </div>
 
@@ -113,7 +115,7 @@ export function PropertyCard({ property, layout = 'grid' }: PropertyProps) {
         {/* Status Badge */}
         <div className="absolute top-3 left-3">
            <span className="px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider rounded-sm bg-white text-slate-900 shadow-sm border border-slate-100">
-              {property.type === 'buy' ? 'For Sale' : 'For Rent'}
+              {badgeLabel}
             </span>
         </div>
 
