@@ -17,6 +17,16 @@ export function Hero() {
   const [budget, setBudget] = useState<string>('');
   const [bedrooms, setBedrooms] = useState<string>('');
 
+  const budgetRanges: Record<string, { min?: number; max?: number }> = {
+    'buy-under-50m': { max: 50000000 },
+    'buy-50m-100m': { min: 50000000, max: 100000000 },
+    'buy-100m-plus': { min: 100000000 },
+    'rent-300k-1m': { min: 300000, max: 1000000 },
+    'rent-1m-3m': { min: 1000000, max: 3000000 },
+    'rent-3m-6m': { min: 3000000, max: 6000000 },
+    'rent-6m-plus': { min: 6000000 },
+  };
+
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (location) params.set('location', location);
@@ -24,14 +34,9 @@ export function Hero() {
     if (propertyType) params.set('propertyType', propertyType);
     if (bedrooms) params.set('bedrooms', bedrooms);
 
-    if (budget === 'under-50m') {
-      params.set('maxPrice', '50000000');
-    } else if (budget === '50m-100m') {
-      params.set('minPrice', '50000000');
-      params.set('maxPrice', '100000000');
-    } else if (budget === '100m-plus') {
-      params.set('minPrice', '100000000');
-    }
+    const range = budgetRanges[budget];
+    if (range?.min !== undefined) params.set('minPrice', range.min.toString());
+    if (range?.max !== undefined) params.set('maxPrice', range.max.toString());
 
     navigate(`/properties?${params.toString()}`);
   };
@@ -68,7 +73,14 @@ export function Hero() {
 
         {/* Search Filter Card */}
         <div className="w-full max-w-5xl rounded-sm bg-white p-4 shadow-xl md:p-6 text-left">
-          <Tabs defaultValue="buy" className="w-full" onValueChange={(value) => setListingType(value as 'buy' | 'rent')}>
+          <Tabs
+            defaultValue="buy"
+            className="w-full"
+            onValueChange={(value) => {
+              setListingType(value as 'buy' | 'rent');
+              setBudget('');
+            }}
+          >
             <TabsList className="mb-6 bg-slate-100 p-1">
               <TabsTrigger value="buy" className="px-8 data-[state=active]:bg-white data-[state=active]:text-[#0F4C5C] data-[state=active]:shadow-sm">Buy</TabsTrigger>
               <TabsTrigger value="rent" className="px-8 data-[state=active]:bg-white data-[state=active]:text-[#0F4C5C] data-[state=active]:shadow-sm">Rent</TabsTrigger>
@@ -127,9 +139,20 @@ export function Hero() {
                       <SelectValue placeholder="Any" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="under-50m">Under ₦50M</SelectItem>
-                      <SelectItem value="50m-100m">₦50M - ₦100M</SelectItem>
-                      <SelectItem value="100m-plus">₦100M+</SelectItem>
+                      {listingType === 'buy' ? (
+                        <>
+                          <SelectItem value="buy-under-50m">Under ₦50M</SelectItem>
+                          <SelectItem value="buy-50m-100m">₦50M - ₦100M</SelectItem>
+                          <SelectItem value="buy-100m-plus">₦100M+</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="rent-300k-1m">₦300k - ₦1M /yr</SelectItem>
+                          <SelectItem value="rent-1m-3m">₦1M - ₦3M /yr</SelectItem>
+                          <SelectItem value="rent-3m-6m">₦3M - ₦6M /yr</SelectItem>
+                          <SelectItem value="rent-6m-plus">₦6M+ /yr</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

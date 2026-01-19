@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from '../components/ui/select';
 
+const LAND_PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlYXJ0aCUyMHBsb3R8ZW58MXx8fHwxNzY1ODk4NTU5fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral';
+
 export function Properties() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -50,11 +52,13 @@ export function Properties() {
     if (locationParam) {
       setSearchTerm(locationParam);
     }
-    if (listingTypeParam) {
-      setFilter(listingTypeParam === 'rent' ? 'rent' : listingTypeParam === 'sale' ? 'buy' : 'all');
-    }
     if (propertyTypeParam) {
       setPropertyType(propertyTypeParam);
+    }
+    if (propertyTypeParam === 'land') {
+      setFilter('land');
+    } else if (listingTypeParam) {
+      setFilter(listingTypeParam === 'rent' ? 'rent' : listingTypeParam === 'sale' ? 'buy' : 'all');
     }
     if (minPriceParam || maxPriceParam) {
       setPriceRange({ min: minPriceParam || '', max: maxPriceParam || '' });
@@ -73,7 +77,11 @@ export function Properties() {
   if (filter === 'buy') apiFilters.listingType = 'sale';
   if (filter === 'rent') apiFilters.listingType = 'rent';
   if (searchTerm) apiFilters.search = searchTerm;
-  if (propertyType) apiFilters.propertyType = propertyType;
+  if (filter === 'land') {
+    apiFilters.propertyType = 'land';
+  } else if (propertyType) {
+    apiFilters.propertyType = propertyType;
+  }
   if (priceRange.min) apiFilters.minPrice = parseInt(priceRange.min);
   if (priceRange.max) apiFilters.maxPrice = parseInt(priceRange.max);
   if (bedrooms !== 'any') apiFilters.bedrooms = parseInt(bedrooms);
@@ -94,8 +102,9 @@ export function Properties() {
   };
 
   const filteredMockProperties = mockProperties.filter((property) => {
-    if (filter === 'buy' && property.type !== 'buy') return false;
-    if (filter === 'rent' && property.type !== 'rent') return false;
+    if (filter === 'buy' && property.type !== 'buy' && property.type !== 'land') return false;
+    if (filter === 'rent' && property.type !== 'rent' && property.type !== 'land') return false;
+    if (filter === 'land' && property.type !== 'land') return false;
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -289,6 +298,13 @@ export function Properties() {
           >
             For Rent
           </Button>
+          <Button 
+             variant={filter === 'land' ? 'default' : 'outline'} 
+             className={filter === 'land' ? "bg-[#0F4C5C] hover:bg-[#0a3844] rounded-full px-6" : "rounded-full px-6 whitespace-nowrap"}
+             onClick={() => setFilter('land')}
+          >
+            Land
+          </Button>
         </div>
       </div>
 
@@ -338,8 +354,8 @@ export function Properties() {
                             bedrooms: property.bedrooms || 0,
                             bathrooms: property.bathrooms || 0,
                             area: property.square_feet ? `${property.square_feet} sqft` : '',
-                            image: property.images?.[0] || '',
-                            images: property.images || [],
+                            image: property.images?.[0] || (property.property_type === 'land' ? LAND_PLACEHOLDER_IMAGE : ''),
+                            images: property.images?.length ? property.images : (property.property_type === 'land' ? [LAND_PLACEHOLDER_IMAGE] : []),
                             isNew: property.is_featured,
                           }
                     } 

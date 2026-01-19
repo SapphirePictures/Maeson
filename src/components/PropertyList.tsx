@@ -7,6 +7,7 @@ import { propertyAPI } from '../lib/api/properties';
 
 export function PropertyList() {
   const [visibleCount, setVisibleCount] = React.useState(6);
+  const landPlaceholder = 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlYXJ0aCUyMHBsb3R8ZW58MXx8fHwxNzY1ODk4NTU5fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral';
   const { data: featuredProperties = [] } = useQuery({
     queryKey: ['featured-properties'],
     queryFn: propertyAPI.getFeaturedProperties,
@@ -28,8 +29,8 @@ export function PropertyList() {
     bedrooms: property.bedrooms || 0,
     bathrooms: property.bathrooms || 0,
     area: property.square_feet ? `${property.square_feet} sqft` : '',
-    image: property.images?.[0] || '',
-    images: property.images || [],
+    image: property.images?.[0] || (property.property_type === 'land' ? landPlaceholder : ''),
+    images: property.images?.length ? property.images : (property.property_type === 'land' ? [landPlaceholder] : []),
     isNew: property.is_featured,
   });
 
