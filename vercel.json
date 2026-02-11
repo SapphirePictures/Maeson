@@ -1,8 +1,8 @@
 {
   "framework": "vite",
-  "buildCommand": "npm install --include=dev && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "build",
-  "installCommand": "npm install --include=dev",
+  "installCommand": "npm install",
   "routes": [
     {
       "handle": "filesystem"
